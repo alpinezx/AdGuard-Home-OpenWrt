@@ -11,4 +11,6 @@ chmod +x /root/install_adguard.sh && /root/install_adguard.sh
 Uninstall
 ----------
 
-Run the script again /root/install_adguard.sh
+Run the script again 
+
+/root/install_adguard.sh
