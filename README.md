@@ -1,4 +1,5 @@
 Automated script for installing AdGuard Home on OpenWrt. Built by Grok 3, xAI.
+------------------------------------------------------------------------------
 
 Install
 -------
