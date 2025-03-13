@@ -5,6 +5,8 @@ Built by Grok 3, xAI.
 Install:
 --------
 
+opkg update && opkg install curl
+
 curl -L https://raw.githubusercontent.com/alpinezx/AdGuard-Home-OpenWrt/refs/heads/main/install_adguard.sh -o /root/install_adguard.sh
 
 chmod +x /root/install_adguard.sh && /root/install_adguard.sh
