@@ -34,7 +34,17 @@ if opkg list-installed | grep -q adguardhome; then
                 if [ -f "$BACKUP_DIR/dhcp_backup.txt" ]; then
                     uci import dhcp < "$BACKUP_DIR/dhcp_backup.txt"
                     uci commit dhcp
-                    service dnsmasq restart || echo "Warning: dnsmasq restart failed"
+                    for i in 1 2 3; do
+                        if service dnsmasq restart; then
+                            break
+                        else
+                            echo -e "${YELLOW}Warning: dnsmasq restart failed (attempt $i/3). Retrying...${RESET}"
+                            sleep 2
+                        fi
+                    done
+                    if ! service dnsmasq status | grep -q "running"; then
+                        echo -e "${RED}Error: dnsmasq failed to restart during uninstall. DNS resolution might be affected.${RESET}"
+                    fi
                 fi
                 if [ -f "$BACKUP_DIR/firewall_backup.txt" ]; then
                     uci import firewall < "$BACKUP_DIR/firewall_backup.txt"
@@ -51,7 +61,17 @@ if opkg list-installed | grep -q adguardhome; then
                 uci set dhcp.@dnsmasq[0].noresolv="0"
                 uci set dhcp.@dnsmasq[0].cachesize="150"
                 uci commit dhcp
-                service dnsmasq restart || echo "Warning: dnsmasq restart failed"
+                for i in 1 2 3; do
+                    if service dnsmasq restart; then
+                        break
+                    else
+                        echo -e "${YELLOW}Warning: dnsmasq restart failed (attempt $i/3). Retrying...${RESET}"
+                        sleep 2
+                    fi
+                done
+                if ! service dnsmasq status | grep -q "running"; then
+                    echo -e "${RED}Error: dnsmasq failed to restart during uninstall. DNS resolution might be affected.${RESET}"
+                fi
                 uci -q del firewall.@redirect[$(uci show firewall | grep -c "AGH-DNS-Interception")-1]
                 uci commit firewall
                 service firewall restart || echo "Warning: firewall restart failed"
@@ -162,7 +182,17 @@ rollback() {
     if [ -f "$BACKUP_DIR/dhcp_backup.txt" ]; then
         uci import dhcp < "$BACKUP_DIR/dhcp_backup.txt"
         uci commit dhcp
-        service dnsmasq restart
+        for i in 1 2 3; do
+            if service dnsmasq restart; then
+                break
+            else
+                echo -e "${YELLOW}Warning: dnsmasq restart failed (attempt $i/3). Retrying...${RESET}"
+                sleep 2
+            fi
+        done
+        if ! service dnsmasq status | grep -q "running"; then
+            echo -e "${RED}Error: dnsmasq failed to restart during rollback. DNS resolution might be affected.${RESET}"
+        fi
     fi
     if [ -f "$BACKUP_DIR/firewall_backup.txt" ]; then
         uci import firewall < "$BACKUP_DIR/firewall_backup.txt"
@@ -219,10 +249,10 @@ if ! opkg install adguardhome; then
             ARCH_DIR="x86_64"
             ;;
         "armv7l"|"arm")
-            ARCH_DIR="arm_cortex-a9"  # Adjust based on your ARM variant if needed
+            ARCH_DIR="arm_cortex-a9"
             ;;
         "mips"|"mipsel")
-            ARCH_DIR="mipsel_24kc"   # Adjust based on your MIPS variant if needed
+            ARCH_DIR="mipsel_24kc"
             ;;
         *)
             echo -e "${RED}Error: Unsupported architecture '$ARCH'. Please install adguardhome manually for your architecture.${RESET}"
@@ -287,9 +317,17 @@ uci set dhcp.@dnsmasq[0].noresolv="1"
 uci add_list dhcp.@dnsmasq[0].server="$NET_ADDR#$DNS_PORT"
 uci commit dhcp
 
-# Restart dnsmasq
-if ! service dnsmasq restart; then
-    echo "Warning: dnsmasq restart failed. DNS resolution might be affected."
+# Restart dnsmasq with retry
+for i in 1 2 3; do
+    if service dnsmasq restart; then
+        break
+    else
+        echo -e "${YELLOW}Warning: dnsmasq restart failed (attempt $i/3). Retrying...${RESET}"
+        sleep 2
+    fi
+done
+if ! service dnsmasq status | grep -q "running"; then
+    echo -e "${RED}Error: dnsmasq failed to restart. DNS resolution might be affected.${RESET}"
 fi
 
 # Configure DNS Interception with firewall
