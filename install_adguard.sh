@@ -51,10 +51,6 @@ if opkg list-installed | grep -q adguardhome; then
                     uci commit firewall
                     service firewall restart || echo "Warning: firewall restart failed"
                 fi
-                AGH_CONFIG="/etc/adguardhome.yaml"
-                if [ -f "$BACKUP_DIR/adguardhome.yaml.bak" ]; then
-                    cp "$BACKUP_DIR/adguardhome.yaml.bak" "$AGH_CONFIG"
-                fi
             else
                 echo "Warning: No backup directory found in /tmp. Performing basic cleanup..."
                 uci -q del dhcp.@dnsmasq[0].server
@@ -292,16 +288,6 @@ fi
 if ! opkg list-installed | grep -q adguardhome; then
     echo -e "${RED}Error: AdGuard Home is not installed.${RESET}"
     rollback
-fi
-
-# Configure AdGuard Home DNS port
-echo "Configuring AdGuard Home DNS port..."
-AGH_CONFIG="/etc/adguardhome.yaml"
-if [ -f "$AGH_CONFIG" ]; then
-    cp "$AGH_CONFIG" "$BACKUP_DIR/adguardhome.yaml.bak"
-    sed -i "s/bind_port: [0-9]*/bind_port: $DNS_PORT/" "$AGH_CONFIG" || echo "Warning: Could not update AdGuard Home config"
-else
-    echo "Warning: AdGuard Home config file not found. Using default settings."
 fi
 
 # Enable and start AdGuard Home
